@@ -1,0 +1,1605 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Flag Battle</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+        <style>
+            @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=IBM+Plex+Mono:wght@500;600&display=swap");
+            :root {
+                color-scheme: dark;
+                --red: #fb3657;
+                --red-bright: #ff637a;
+                --red-pale: #ffd5dc;
+                --ink: #10070b;
+                --panel: rgba(32, 9, 15, 0.9);
+                --line: rgba(255, 99, 122, 0.28);
+            }
+            body {
+                font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+                background: var(--ink);
+                color: #fff4f5;
+                user-select: none;
+                display: grid;
+                width: 100%;
+                height: 100dvh;
+                margin: 0;
+                place-items: center;
+                overflow: hidden;
+            }
+            #game-container {
+                position: relative;
+                width: min(100vw, 56.25dvh);
+                height: min(100dvh, 177.7778vw);
+                aspect-ratio: 9 / 16;
+                padding: 0;
+                overflow: hidden;
+                box-sizing: border-box;
+                isolation: isolate;
+                background:
+                    radial-gradient(
+                        ellipse at 50% 53%,
+                        rgba(132, 20, 39, 0.2),
+                        transparent 48%
+                    ),
+                    radial-gradient(
+                        ellipse at 50% 115%,
+                        #280b13 0%,
+                        #10070b 64%
+                    );
+            }
+            #game-container::before {
+                position: absolute;
+                z-index: 0;
+                inset: 0;
+                background-image: radial-gradient(
+                    rgba(255, 126, 145, 0.12) 0.7px,
+                    transparent 0.7px
+                );
+                background-size: 24px 24px;
+                content: "";
+                mask-image: linear-gradient(
+                    to bottom,
+                    transparent 12%,
+                    #000 50%,
+                    transparent 100%
+                );
+                pointer-events: none;
+            }
+            #live-indicator {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                padding: 5px 9px;
+                border: 1px solid rgba(255, 99, 122, 0.32);
+                border-radius: 4px;
+                background: rgba(12, 5, 8, 0.6);
+                color: var(--red-pale);
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 9px;
+                font-weight: 600;
+                letter-spacing: 0.08em;
+            }
+            #live-indicator span {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--red-bright);
+                box-shadow: 0 0 10px var(--red-bright);
+                animation: live-pulse 1.4s ease-in-out infinite;
+            }
+            @keyframes live-pulse {
+                50% {
+                    opacity: 0.45;
+                }
+            }
+            #leaderboard {
+                position: absolute;
+                z-index: 20;
+                top: max(14px, env(safe-area-inset-top));
+                left: max(16px, env(safe-area-inset-left));
+                right: max(16px, env(safe-area-inset-right));
+                width: auto;
+                box-sizing: border-box;
+                padding: 12px 16px 13px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: linear-gradient(
+                    115deg,
+                    rgba(63, 13, 25, 0.96),
+                    var(--panel) 58%,
+                    rgba(39, 9, 17, 0.94)
+                );
+                box-shadow:
+                    0 12px 36px rgba(0, 0, 0, 0.28),
+                    inset 0 1px rgba(255, 215, 221, 0.06);
+                pointer-events: none;
+            }
+            #leaderboard-heading {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                gap: 16px;
+                color: var(--red-pale);
+            }
+            .brand-lockup,
+            .header-stats,
+            .qualified-stat {
+                display: flex;
+                align-items: center;
+            }
+            .brand-lockup {
+                min-width: 0;
+                gap: 10px;
+            }
+            .brand-emblem {
+                display: grid;
+                width: 31px;
+                height: 31px;
+                place-items: center;
+                border: 1px solid rgba(255, 99, 122, 0.62);
+                border-radius: 5px;
+                background: linear-gradient(145deg, #d92143, #6f1024);
+                box-shadow: 0 0 20px rgba(251, 54, 87, 0.2);
+                color: white;
+                font-size: 22px;
+                font-weight: 900;
+                line-height: 1;
+            }
+            .brand-copy {
+                display: grid;
+                gap: 1px;
+            }
+            .brand-name {
+                color: #fff4f5;
+                font-size: 17px;
+                font-weight: 900;
+                letter-spacing: 0.06em;
+                line-height: 1;
+            }
+            .brand-caption {
+                color: #db8795;
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 8px;
+                letter-spacing: 0.12em;
+            }
+            .header-stats {
+                gap: 12px;
+            }
+            .qualified-stat {
+                gap: 8px;
+                color: #e9aab4;
+                font-size: 11px;
+                font-weight: 800;
+                letter-spacing: 0.1em;
+            }
+            #qualified-count {
+                color: #fff4f5;
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            #qualified-list {
+                display: grid;
+                grid-template-columns: repeat(15, minmax(0, 1fr));
+                gap: 5px;
+                width: 100%;
+                margin: 11px 0 0;
+                padding: 0;
+                list-style: none;
+            }
+            #qualified-list > li {
+                display: grid;
+                height: 27px;
+                place-items: center;
+                box-sizing: border-box;
+                border: 1px solid rgba(248, 113, 133, 0.2);
+                border-radius: 3px;
+                background: rgba(15, 5, 9, 0.46);
+                color: #fff;
+                font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+                font-size: 17px;
+                line-height: 1;
+            }
+            #qualified-list > li.is-filled {
+                border-color: rgba(255, 99, 122, 0.78);
+                background: rgba(115, 18, 37, 0.6);
+                box-shadow: inset 0 0 12px rgba(251, 54, 87, 0.13);
+            }
+            #elimination-panel {
+                position: absolute;
+                z-index: 20;
+                left: max(16px, env(safe-area-inset-left));
+                right: auto;
+                bottom: max(16px, env(safe-area-inset-bottom));
+                top: auto;
+                width: min(360px, calc(100vw - 32px));
+                padding: 9px 11px 10px;
+                border: 1px solid var(--line);
+                border-radius: 7px;
+                background: rgba(24, 7, 12, 0.86);
+                box-shadow:
+                    0 10px 28px rgba(0, 0, 0, 0.26),
+                    inset 0 1px rgba(255, 215, 221, 0.04);
+                pointer-events: none;
+            }
+            #elimination-heading {
+                margin-bottom: 7px;
+                color: #e5a2ad;
+                font-size: 10px;
+                font-weight: 800;
+                letter-spacing: 0.13em;
+                text-transform: uppercase;
+            }
+            #eliminated-list {
+                display: flex;
+                gap: 5px;
+                width: 100%;
+                margin: 0;
+                padding: 0 0 2px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                scrollbar-width: none;
+                list-style: none;
+                scroll-behavior: smooth;
+            }
+            #eliminated-list::-webkit-scrollbar {
+                display: none;
+            }
+            #eliminated-list > li {
+                display: grid;
+                flex: 0 0 30px;
+                width: 30px;
+                height: 30px;
+                place-items: center;
+                border: 1px solid rgba(251, 113, 133, 0.24);
+                border-radius: 3px;
+                background: rgba(48, 12, 22, 0.75);
+                font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+                font-size: 19px;
+                line-height: 1;
+            }
+            #canvas-container {
+                position: absolute;
+                inset: 0;
+                z-index: 10;
+            }
+            #canvas-container canvas {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            #float-layer {
+                position: absolute;
+                inset: 0;
+                z-index: 15;
+                overflow: visible;
+                pointer-events: none;
+            }
+            .eliminated-float {
+                position: absolute;
+                z-index: 30;
+                width: 36px;
+                text-align: center;
+                color: var(--red-pale);
+                font-size: clamp(20px, 6vw, 30px);
+                font-weight: 800;
+                pointer-events: none;
+                transform-origin: 50% 50%;
+                text-shadow:
+                    0 0 8px var(--red-bright),
+                    0 0 20px rgba(248, 113, 113, 0.75);
+                animation: flag-drop-out 1.25s cubic-bezier(0.18, 0.72, 0.2, 1) forwards;
+            }
+
+            @keyframes flag-drop-out {
+                0% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                }
+                18% {
+                    opacity: 1;
+                    transform: translate(
+                        calc(-50% + var(--exit-x) * .16),
+                        calc(-50% + var(--exit-y) * .16)
+                    ) scale(1.02) rotate(calc(var(--spin) * 7deg));
+                }
+                48% {
+                    opacity: .98;
+                    transform: translate(
+                        calc(-50% + var(--exit-x) * .48),
+                        calc(-50% + var(--exit-y) * .48 + var(--gravity-y) * .16)
+                    ) scale(.94) rotate(calc(var(--spin) * 20deg));
+                }
+                76% {
+                    opacity: .78;
+                    transform: translate(
+                        calc(-50% + var(--exit-x) * .78),
+                        calc(-50% + var(--exit-y) * .78 + var(--gravity-y) * .58)
+                    ) scale(.76) rotate(calc(var(--spin) * 38deg));
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(
+                        calc(-50% + var(--exit-x)),
+                        calc(-50% + var(--exit-y) + var(--gravity-y))
+                    ) scale(.48) rotate(calc(var(--spin) * 58deg));
+                }
+            }
+
+
+
+            #speech-caption {
+                position: absolute;
+                z-index: 17;
+                left: 50%;
+                bottom: max(106px, calc(env(safe-area-inset-bottom) + 96px));
+                max-width: min(82vw, 420px);
+                padding: 8px 14px;
+                transform: translateX(-50%);
+                border: 1px solid rgba(255, 99, 122, 0.42);
+                border-radius: 4px;
+                background: rgba(20, 6, 11, 0.9);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+                color: #ffe4e8;
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 12px;
+                text-align: center;
+                opacity: 0;
+                visibility: hidden;
+                transition:
+                    opacity 160ms ease,
+                    visibility 160ms ease;
+                pointer-events: none;
+            }
+            #speech-caption.is-visible {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            @media (max-width: 560px) {
+                #leaderboard {
+                    left: max(10px, env(safe-area-inset-left));
+                    right: max(10px, env(safe-area-inset-right));
+                    padding: 10px 10px 11px;
+                }
+                .brand-emblem {
+                    width: 27px;
+                    height: 27px;
+                    font-size: 19px;
+                }
+                .brand-name {
+                    font-size: 15px;
+                }
+                .brand-caption {
+                    font-size: 7px;
+                }
+                .header-stats {
+                    gap: 7px;
+                }
+                .qualified-stat {
+                    gap: 5px;
+                    font-size: 9px;
+                }
+                #live-indicator {
+                    gap: 5px;
+                    padding: 4px 6px;
+                    font-size: 8px;
+                }
+                #qualified-list {
+                    gap: 3px;
+                    margin-top: 9px;
+                }
+                #qualified-list > li {
+                    height: 22px;
+                    font-size: 13px;
+                }
+                #elimination-panel {
+                    left: max(10px, env(safe-area-inset-left));
+                    bottom: max(10px, env(safe-area-inset-bottom));
+                    width: min(300px, calc(100vw - 20px));
+                }
+            }
+            @media (max-width: 360px) {
+                .brand-caption {
+                    display: none;
+                }
+                .qualified-stat > span:first-child {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body class="overflow-hidden p-0 m-0">
+        <div id="game-container">
+            <div
+                id="leaderboard"
+                aria-label="Countries qualified for the final"
+            >
+                <div id="leaderboard-heading">
+                    <div class="brand-lockup">
+                        <span class="brand-emblem" aria-hidden="true">F</span>
+                        <span class="brand-copy">
+                            <span class="brand-name">FLAG BATTLE</span>
+                            <span class="brand-caption">WORLD SURVIVAL</span>
+                        </span>
+                    </div>
+                    <div class="header-stats">
+                        <div class="qualified-stat">
+                            <span>QUALIFIED</span>
+                            <span id="qualified-count">0/30</span>
+                        </div>
+                        <div id="live-indicator" aria-label="Live">
+                            <span></span>
+                            LIVE
+                        </div>
+                    </div>
+                </div>
+                <ul
+                    id="qualified-list"
+                    aria-live="polite"
+                    aria-relevant="additions"
+                ></ul>
+            </div>
+            <div id="elimination-panel" aria-label="Recently eliminated flags">
+                <div id="elimination-heading">ELIMINATED</div>
+                <ul id="eliminated-list" aria-live="off"></ul>
+            </div>
+
+            <!-- Matter.js Canvas Container -->
+            <div
+                id="canvas-container"
+                class="absolute inset-0 z-10 w-full h-full"
+            ></div>
+            <div id="float-layer" aria-hidden="true"></div>
+            <div id="start-overlay" aria-hidden="true">
+                <div id="start-countdown">3</div>
+            </div>
+            <div id="winner-display" aria-live="assertive">
+                <div id="winner-flag"></div>
+                <div id="winner-name"></div>
+            </div>
+            <div
+                id="speech-caption"
+                aria-live="polite"
+                aria-atomic="true"
+            ></div>
+        </div>
+
+        <script>
+            // 1. Country Flag Database: 193 UN members plus the Holy See and Palestine.
+            const countryEntries = `
+                AD|Andorra,AE|United Arab Emirates,AF|Afghanistan,AG|Antigua and Barbuda,AL|Albania,AM|Armenia,AO|Angola,AR|Argentina,AT|Austria,AU|Australia,AZ|Azerbaijan
+                BA|Bosnia and Herzegovina,BB|Barbados,BD|Bangladesh,BE|Belgium,BF|Burkina Faso,BG|Bulgaria,BH|Bahrain,BI|Burundi,BJ|Benin,BN|Brunei,BO|Bolivia,BR|Brazil,BS|Bahamas,BT|Bhutan,BW|Botswana,BY|Belarus,BZ|Belize
+                CA|Canada,CD|Democratic Republic of the Congo,CF|Central African Republic,CG|Republic of the Congo,CH|Switzerland,CI|Cote d'Ivoire,CL|Chile,CM|Cameroon,CN|China,CO|Colombia,CR|Costa Rica,CU|Cuba,CV|Cabo Verde,CY|Cyprus,CZ|Czechia
+                DE|Germany,DJ|Djibouti,DK|Denmark,DM|Dominica,DO|Dominican Republic,DZ|Algeria
+                EC|Ecuador,EE|Estonia,EG|Egypt,ER|Eritrea,ES|Spain,ET|Ethiopia
+                FI|Finland,FJ|Fiji,FM|Micronesia,FR|France,GA|Gabon,GB|United Kingdom,GD|Grenada,GE|Georgia,GH|Ghana,GM|Gambia,GN|Guinea,GQ|Equatorial Guinea,GR|Greece,GT|Guatemala,GW|Guinea-Bissau,GY|Guyana
+                HN|Honduras,HR|Croatia,HT|Haiti,HU|Hungary
+                ID|Indonesia,IE|Ireland,IL|Israel,IN|India,IQ|Iraq,IR|Iran,IS|Iceland,IT|Italy
+                JM|Jamaica,JO|Jordan,JP|Japan
+                KE|Kenya,KG|Kyrgyzstan,KH|Cambodia,KI|Kiribati,KM|Comoros,KN|Saint Kitts and Nevis,KP|North Korea,KR|South Korea,KW|Kuwait,KZ|Kazakhstan
+                LA|Laos,LB|Lebanon,LC|Saint Lucia,LI|Liechtenstein,LK|Sri Lanka,LR|Liberia,LS|Lesotho,LT|Lithuania,LU|Luxembourg,LV|Latvia,LY|Libya,MA|Morocco,MC|Monaco,MD|Moldova,ME|Montenegro,MG|Madagascar,MH|Marshall Islands,MK|North Macedonia,ML|Mali,MM|Myanmar,MN|Mongolia,MR|Mauritania,MT|Malta,MU|Mauritius,MV|Maldives,MW|Malawi,MX|Mexico,MY|Malaysia,MZ|Mozambique
+                NA|Namibia,NE|Niger,NG|Nigeria,NI|Nicaragua,NL|Netherlands,NO|Norway,NP|Nepal,NR|Nauru,NZ|New Zealand,OM|Oman,PA|Panama,PE|Peru,PG|Papua New Guinea,PH|Philippines,PK|Pakistan,PL|Poland,PS|Palestine,PT|Portugal,PW|Palau,PY|Paraguay,QA|Qatar
+                RO|Romania,RS|Serbia,RU|Russia,RW|Rwanda,SA|Saudi Arabia,SB|Solomon Islands,SC|Seychelles,SD|Sudan,SE|Sweden,SG|Singapore,SI|Slovenia,SK|Slovakia,SL|Sierra Leone,SM|San Marino,SN|Senegal,SO|Somalia,SR|Suriname,SS|South Sudan,ST|Sao Tome and Principe,SV|El Salvador,SY|Syria,SZ|Eswatini
+                TD|Chad,TG|Togo,TH|Thailand,TJ|Tajikistan,TL|Timor-Leste,TM|Turkmenistan,TN|Tunisia,TO|Tonga,TR|Turkey,TT|Trinidad and Tobago,TV|Tuvalu,TZ|Tanzania
+                UA|Ukraine,UG|Uganda,US|United States,UY|Uruguay,UZ|Uzbekistan,VA|Vatican City,VC|Saint Vincent and the Grenadines,VE|Venezuela,VN|Vietnam,VU|Vanuatu,WS|Samoa,YE|Yemen,ZA|South Africa,ZM|Zambia,ZW|Zimbabwe
+            `;
+            const countryFlagEmoji = (code) =>
+                String.fromCodePoint(
+                    ...[...code].map((letter) => 127397 + letter.charCodeAt(0)),
+                );
+            const flagData = countryEntries
+                .trim()
+                .split(/[\n,]+/)
+                .map((entry) => {
+                    const [code, name] = entry.trim().split("|");
+                    return { code, name, emoji: countryFlagEmoji(code) };
+                });
+
+            // 2. Transparent flag textures keep the emoji flags free of badge circles.
+            function createEmojiTexture(emoji, radius = 32) {
+                const canvas = document.createElement("canvas");
+                const size = radius * 2;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext("2d");
+                ctx.font = `${radius * 1.25}px "Apple Color Emoji", "SF Pro Display", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(emoji, radius, radius);
+
+                return canvas.toDataURL();
+            }
+
+            // Pre-generate Texture URLs
+            flagData.forEach((flag) => {
+                flag.texture = createEmojiTexture(flag.emoji, 32);
+            });
+
+            const backgroundMusic = new Audio(
+                new URL("./music.mp3", document.baseURI).href,
+            );
+            backgroundMusic.preload = "auto";
+            backgroundMusic.volume = 0.14;
+            backgroundMusic.loop = true;
+            const winSound = new Audio(
+                new URL("./win.mp3", document.baseURI).href,
+            );
+            winSound.preload = "auto";
+            const collisionSound = new Audio(
+                new URL("./collide.mp3", document.baseURI).href,
+            );
+            collisionSound.preload = "auto";
+            let musicStarted = false;
+            let audioUnlocked = false;
+            let pendingWinSound = false;
+            let lastCollisionSoundAt = 0;
+
+            function playSound(sound) {
+                if (!audioUnlocked) {
+                    if (sound === winSound) pendingWinSound = true;
+                    return;
+                }
+                const instance = sound.cloneNode();
+                instance.volume = sound === backgroundMusic ? 0.14 : 0.65;
+                instance.play().catch(() => {});
+            }
+
+            function playPendingWinSound() {
+                if (!pendingWinSound) return;
+                pendingWinSound = false;
+                playSound(winSound);
+            }
+
+            function startMusic() {
+                if (musicStarted) return;
+                backgroundMusic
+                    .play()
+                    .then(() => {
+                        musicStarted = true;
+                        audioUnlocked = true;
+                        document.removeEventListener("pointerdown", startMusic);
+                        document.removeEventListener("keydown", startMusic);
+                        playPendingWinSound();
+                    })
+                    .catch(() => {});
+            }
+
+            function unlockAudio() {
+                audioUnlocked = true;
+                document.removeEventListener("pointerdown", unlockAudio);
+                document.removeEventListener("keydown", unlockAudio);
+                playPendingWinSound();
+                startMusic();
+            }
+
+            startMusic();
+            document.addEventListener("pointerdown", unlockAudio);
+            document.addEventListener("keydown", unlockAudio);
+
+            // Matter.js Setup
+            const { Engine, Render, Runner, Bodies, Composite, Body, Events } =
+                Matter;
+
+            const engine = Engine.create({ gravity: { x: 0, y: 0.65 } });
+            const world = engine.world;
+
+            const gameContainer = document.getElementById("game-container");
+            let width = gameContainer.clientWidth;
+            let height = gameContainer.clientHeight;
+            let centerX;
+            let centerY;
+            let radius;
+            const gapSize = 0.38; // Normal exit gap size in radians
+            const segmentCount = 64;
+            const qualifiedFlags = [];
+            let balls = [];
+            let tournamentPhase = "qualifying";
+
+            function updateGameGeometry() {
+                width = gameContainer.clientWidth || window.innerWidth;
+                height = gameContainer.clientHeight || window.innerHeight;
+
+                const leaderboard = document.getElementById("leaderboard");
+                const eliminationPanel =
+                    document.getElementById("elimination-panel");
+                const topBound =
+                    leaderboard.getBoundingClientRect().bottom + 18;
+                const bottomBound = Math.min(
+                    height - 16,
+                    eliminationPanel.getBoundingClientRect().top - 18,
+                );
+                const availableHeight = Math.max(64, bottomBound - topBound);
+                centerX = width / 2;
+                centerY = (topBound + bottomBound) / 2;
+                radius = Math.max(
+                    32,
+                    Math.min((width - 32) / 2, availableHeight * 0.43),
+                );
+            }
+
+            updateGameGeometry();
+
+            const render = Render.create({
+                element: document.getElementById("canvas-container"),
+                engine: engine,
+                options: {
+                    width: width,
+                    height: height,
+                    wireframes: false,
+                    background: "transparent",
+                },
+            });
+
+            Render.run(render);
+
+            // Neon glow for the circle and yellow gate/arc.
+            Events.on(render, "afterRender", () => {
+                const ctx = render.context;
+                ctx.save();
+
+                // Glowing circle outline, with the real opening preserved.
+                // The visible neon ring must match the physical ring gap.
+                const visualGapHalf = gapSize / 2;
+                const visualGapCenter = currentAngle;
+                ctx.strokeStyle = "rgba(251, 54, 87, 0.95)";
+                ctx.lineWidth = Math.max(4, radius * 0.012);
+                ctx.shadowColor = "rgba(251, 54, 87, 0.95)";
+                ctx.shadowBlur = Math.max(18, radius * 0.07);
+
+                ctx.beginPath();
+                ctx.arc(
+                    centerX,
+                    centerY,
+                    radius,
+                    visualGapCenter + visualGapHalf,
+                    visualGapCenter + Math.PI * 2 - visualGapHalf,
+                );
+                ctx.stroke();
+
+                // Yellow arc stays parked in the opening during the countdown,
+                // then sweeps around the circle once the game starts.
+                ctx.beginPath();
+                ctx.arc(
+                    centerX,
+                    centerY,
+                    radius,
+                    yellowGateAngle - yellowGateArc / 2,
+                    yellowGateAngle + yellowGateArc / 2,
+                );
+                ctx.strokeStyle = "rgba(253, 224, 71, 1)";
+                ctx.lineWidth = Math.max(7, radius * 0.026);
+                ctx.shadowColor = "rgba(253, 224, 71, 1)";
+                ctx.shadowBlur = Math.max(24, radius * 0.11);
+                ctx.stroke();
+
+                // Extra bright core for the gate.
+                ctx.shadowBlur = Math.max(10, radius * 0.05);
+                ctx.lineWidth = Math.max(3, radius * 0.012);
+                ctx.stroke();
+
+                // Random glowing heart respawn pickups outside the ring.
+                heartPickups.forEach((heart) => {
+                    if (!heart.renderPosition) return;
+                    const { x, y, size } = heart.renderPosition;
+                    ctx.save();
+                    ctx.font = `900 ${size}px Arial`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.shadowColor = "rgba(255, 90, 150, 0.95)";
+                    ctx.shadowBlur = Math.max(12, size * 0.7);
+                    ctx.fillStyle = "#ff5a96";
+                    ctx.fillText("♥", x, y);
+                    ctx.restore();
+                });
+
+                // Small respawn animation around the flag that just returned.
+                const now = performance.now();
+                respawnEffects = respawnEffects.filter((effect) => {
+                    const progress = Math.min(1, (now - effect.startedAt) / 700);
+                    if (progress >= 1) return false;
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const pulse = 1 - progress;
+                    const size = effect.radius * (0.7 + eased * 0.65);
+                    ctx.save();
+                    ctx.globalAlpha = pulse * 0.9;
+                    ctx.strokeStyle = "rgba(255, 90, 150, 0.95)";
+                    ctx.lineWidth = Math.max(2, effect.radius * 0.11);
+                    ctx.shadowColor = "rgba(255, 90, 150, 0.9)";
+                    ctx.shadowBlur = Math.max(8, effect.radius * 0.55);
+                    ctx.beginPath();
+                    ctx.arc(effect.x, effect.y, size, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.font = `900 ${Math.max(14, effect.radius * 1.15)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.globalAlpha = pulse;
+                    ctx.shadowBlur = Math.max(8, effect.radius * 0.45);
+                    ctx.fillText(effect.emoji, effect.x, effect.y);
+                    ctx.restore();
+                    return true;
+                });
+                ctx.restore();
+            });
+
+            const runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // 4. Rotating Circle Wall with Gap
+            let ringSegments = [];
+            let ringBarriers = [];
+            let yellowGateSegments = [];
+            let heartPickups = [];
+            let respawnEffects = [];
+            let currentAngle = 0;
+            let yellowGateAngle = 0;
+            const rotationSpeed = 0.025;
+            const yellowGateSpeed = 0.052;
+            const yellowGateArc = 0.52;
+            const yellowGateSegmentCount = 24;
+
+            function buildRing() {
+                ringSegments
+                    .concat(ringBarriers, yellowGateSegments)
+                    .forEach((segment) => Composite.remove(world, segment));
+                ringSegments = [];
+                ringBarriers = [];
+                yellowGateSegments = [];
+
+                const step = (Math.PI * 2) / segmentCount;
+
+                for (let i = 0; i < segmentCount; i++) {
+                    const angle = i * step;
+                    if (
+                        angle < gapSize / 2 ||
+                        angle > Math.PI * 2 - gapSize / 2
+                    ) {
+                        continue;
+                    }
+
+                    const x = centerX + radius * Math.cos(angle);
+                    const y = centerY + radius * Math.sin(angle);
+
+                    const segmentLength = Math.max(
+                        3,
+                        ((Math.PI * 2 * radius) / segmentCount) * 0.82,
+                    );
+                    const segment = Bodies.rectangle(
+                        x,
+                        y,
+                        segmentLength,
+                        Math.max(2, radius * 0.012),
+                        {
+                            isStatic: true,
+                            angle: angle + Math.PI / 2,
+                            restitution: 0.88,
+                            friction: 0.02,
+                            render: { fillStyle: "#fb3657" },
+                        },
+                    );
+                    segment.ringAngle = angle;
+                    ringSegments.push(segment);
+
+                    const barrier = Bodies.rectangle(
+                        x,
+                        y,
+                        Math.max(
+                            3,
+                            ((Math.PI * 2 * radius) / segmentCount) * 0.96,
+                        ),
+                        Math.max(8, radius * 0.05),
+                        {
+                            isStatic: true,
+                            angle: angle + Math.PI / 2,
+                            restitution: 0.88,
+                            friction: 0.02,
+                            render: { visible: false },
+                        },
+                    );
+                    barrier.ringAngle = angle;
+                    ringBarriers.push(barrier);
+                }
+
+                // Yellow moving arc: a physical gate that sweeps around the ring.
+                const gateStep = yellowGateArc / yellowGateSegmentCount;
+                for (let i = 0; i < yellowGateSegmentCount; i++) {
+                    const gateAngle =
+                        yellowGateAngle -
+                        yellowGateArc / 2 +
+                        gateStep * (i + 0.5);
+                    const x = centerX + radius * Math.cos(gateAngle);
+                    const y = centerY + radius * Math.sin(gateAngle);
+                    const gateSegment = Bodies.rectangle(
+                        x,
+                        y,
+                        Math.max(4, (radius * yellowGateArc / yellowGateSegmentCount) * 1.35),
+                        Math.max(5, radius * 0.025),
+                        {
+                            isStatic: true,
+                            angle: gateAngle + Math.PI / 2,
+                            restitution: 0.9,
+                            friction: 0.02,
+                            render: { fillStyle: "#fde047" },
+                        },
+                    );
+                    gateSegment.gateAngle = gateAngle;
+                    yellowGateSegments.push(gateSegment);
+                }
+
+                Composite.add(
+                    world,
+                    ringSegments.concat(ringBarriers, yellowGateSegments),
+                );
+            }
+
+            buildRing();
+
+            function createHeartPickup() {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = radius + 58 + Math.random() * 62;
+                const x = centerX + Math.cos(angle) * distance;
+                const y = centerY + Math.sin(angle) * distance;
+                const heart = Bodies.circle(x, y, 22, {
+                    isStatic: true,
+                    isSensor: true,
+                    label: "respawn-heart",
+                    render: { visible: false },
+                });
+                heart.heartAngle = angle;
+                heart.heartDistance = distance;
+                heart.renderPosition = { x, y, size: 30 };
+                return heart;
+            }
+
+            function buildHeartPickups() {
+                heartPickups.forEach((heart) => Composite.remove(world, heart));
+                heartPickups = [];
+
+                const heartCount = 8;
+                for (let i = 0; i < heartCount; i++) {
+                    heartPickups.push(createHeartPickup());
+                }
+
+                Composite.add(world, heartPickups);
+            }
+
+            function replaceHeartAfterRespawn() {
+                const heart = createHeartPickup();
+                heartPickups.push(heart);
+                Composite.add(world, heart);
+            }
+
+            buildHeartPickups();
+
+            // Rotate Circle Frame by Frame
+            const startOverlayUI = document.getElementById("start-overlay");
+            const startCountdownUI = document.getElementById("start-countdown");
+            let roundShakeStartedAt = performance.now();
+            const roundShakeDuration = 1800;
+            const ballRadiusForCountdown = Math.max(10, Math.min(22, radius / 10));
+            let gameStarted = false;
+            let startTimer = null;
+            let lastRoundShakeX = 0;
+            let lastRoundShakeY = 0;
+            engine.timing.timeScale = 0;
+
+            Events.on(engine, "beforeUpdate", () => {
+                const elapsed = performance.now() - roundShakeStartedAt;
+                const shakeProgress = Math.min(1, elapsed / roundShakeDuration);
+                const shakeStrength = (1 - shakeProgress) ** 2;
+                const shakeAmplitude = Math.max(5, radius * 0.035);
+                const shakeX =
+                    Math.sin(elapsed * 0.075) * shakeAmplitude * shakeStrength;
+                const shakeY =
+                    Math.cos(elapsed * 0.09) * shakeAmplitude * 0.55 * shakeStrength;
+                lastRoundShakeX = shakeX;
+                lastRoundShakeY = shakeY;
+                if (gameStarted) {
+                    currentAngle += rotationSpeed;
+                }
+                if (gameStarted) {
+                    yellowGateAngle += yellowGateSpeed;
+                }
+
+                ringSegments.concat(ringBarriers).forEach((segment) => {
+                    const angle = segment.ringAngle + currentAngle;
+                    const x =
+                        centerX + radius * Math.cos(angle) + shakeX;
+                    const y =
+                        centerY + radius * Math.sin(angle) + shakeY;
+
+                    Body.setPosition(segment, { x, y });
+                    Body.setAngle(segment, angle + Math.PI / 2);
+                });
+
+                yellowGateSegments.forEach((segment, index) => {
+                    const gateStep = yellowGateArc / yellowGateSegmentCount;
+                    const angle =
+                        yellowGateAngle -
+                        yellowGateArc / 2 +
+                        gateStep * (index + 0.5);
+                    const x = centerX + radius * Math.cos(angle) + shakeX;
+                    const y = centerY + radius * Math.sin(angle) + shakeY;
+                    Body.setPosition(segment, { x, y });
+                    Body.setAngle(segment, angle + Math.PI / 2);
+                });
+
+                if (!gameStarted) {
+                    // Hard-lock flags to the arena during 3-2-1. Their position
+                    // is recalculated from a fixed inner offset every frame, so
+                    // neither physics nor the visual shake can push them outside.
+                    const countdownSafeRadius =
+                        Math.max(20, radius - ballRadiusForCountdown - Math.max(30, radius * 0.12));
+                    balls.forEach((ball) => {
+                        if (!Number.isFinite(ball.countdownOffsetX)) {
+                            const dx = ball.position.x - centerX;
+                            const dy = ball.position.y - centerY;
+                            const d = Math.hypot(dx, dy) || 1;
+                            const safeD = Math.min(d, countdownSafeRadius);
+                            ball.countdownOffsetX = (dx / d) * safeD;
+                            ball.countdownOffsetY = (dy / d) * safeD;
+                        }
+
+                        let ox = ball.countdownOffsetX;
+                        let oy = ball.countdownOffsetY;
+                        const offsetD = Math.hypot(ox, oy) || 1;
+                        if (offsetD > countdownSafeRadius) {
+                            const scale = countdownSafeRadius / offsetD;
+                            ox *= scale;
+                            oy *= scale;
+                            ball.countdownOffsetX = ox;
+                            ball.countdownOffsetY = oy;
+                        }
+
+                        Body.setPosition(ball, {
+                            x: centerX + shakeX + ox,
+                            y: centerY + shakeY + oy,
+                        });
+                        Body.setVelocity(ball, { x: 0, y: 0 });
+                    });
+                    return;
+                }
+
+                balls.forEach((ball) => {
+                    if (Math.hypot(ball.velocity.x, ball.velocity.y) < 2.5) {
+                        Body.setVelocity(ball, {
+                            x: (Math.random() - 0.5) * 8,
+                            y: -3 - Math.random() * 3,
+                        });
+                    }
+                });
+            });
+
+            // 5. Spawn Flag Emoji Balls
+            function spawnFlagBalls() {
+                balls.forEach((b) => Composite.remove(world, b));
+                balls = [];
+
+                const activeFlags =
+                    tournamentPhase === "final"
+                        ? qualifiedFlags
+                        : flagData.filter(
+                              (flag) =>
+                                  !qualifiedFlags.some(
+                                      (qualified) =>
+                                          qualified.code === flag.code,
+                                  ),
+                          );
+                const ballRadius = Math.max(10, Math.min(22, radius / 10));
+
+                activeFlags.forEach((flag) => {
+                    const spawnAngle = Math.random() * Math.PI * 2;
+                    const spawnDistance =
+                        Math.sqrt(Math.random()) * Math.max(20, radius - ballRadius - Math.max(18, radius * 0.08));
+                    const spawnX =
+                        centerX + Math.cos(spawnAngle) * spawnDistance;
+                    const spawnY =
+                        centerY + Math.sin(spawnAngle) * spawnDistance;
+
+                    const ball = Bodies.circle(spawnX, spawnY, ballRadius, {
+                        restitution: 0.94,
+                        friction: 0.005,
+                        frictionAir: 0.002,
+                        label: flag.name,
+                        countryCode: flag.code,
+                        emoji: flag.emoji,
+                        render: {
+                            sprite: {
+                                texture: flag.texture,
+                                xScale: ballRadius / 32,
+                                yScale: ballRadius / 32,
+                            },
+                        },
+                    });
+                    Body.setVelocity(ball, {
+                        x: (Math.random() - 0.5) * 7,
+                        y: (Math.random() - 0.5) * 7,
+                    });
+                    // Never give a freshly spawned flag enough outward speed to
+                    // start outside the safe physics envelope.
+                    const spawnOffsetX = ball.position.x - centerX;
+                    const spawnOffsetY = ball.position.y - centerY;
+                    const spawnDist = Math.hypot(spawnOffsetX, spawnOffsetY) || 1;
+                    if (spawnDist > radius - ballRadius - Math.max(14, radius * 0.1)) {
+                        const inwardX = -spawnOffsetX / spawnDist;
+                        const inwardY = -spawnOffsetY / spawnDist;
+                        Body.setVelocity(ball, {
+                            x: inwardX * 3 + (Math.random() - 0.5) * 2,
+                            y: inwardY * 3 + (Math.random() - 0.5) * 2,
+                        });
+                    }
+                    balls.push(ball);
+                });
+
+                Composite.add(world, balls);
+            }
+
+            Events.on(engine, "collisionStart", (event) => {
+                event.pairs.forEach(({ bodyA, bodyB }) => {
+                    const ball = bodyA.countryCode ? bodyA : bodyB.countryCode ? bodyB : null;
+                    const heart = bodyA.label === "respawn-heart" ? bodyA : bodyB.label === "respawn-heart" ? bodyB : null;
+                    if (!ball || !heart || !ball.isEscapingThroughGap) return;
+
+                    const heartIndex = heartPickups.indexOf(heart);
+                    if (heartIndex === -1) return;
+
+                    heartPickups.splice(heartIndex, 1);
+                    Composite.remove(world, heart);
+
+                    ball.isEscapingThroughGap = false;
+                    ball.render.visible = true;
+                    Body.setPosition(ball, {
+                        x: centerX + (Math.random() - 0.5) * radius * 0.45,
+                        y: centerY + (Math.random() - 0.5) * radius * 0.45,
+                    });
+                    Body.setVelocity(ball, {
+                        x: (Math.random() - 0.5) * 10,
+                        y: (Math.random() - 0.5) * 10,
+                    });
+
+                    respawnEffects.push({
+                        x: ball.position.x,
+                        y: ball.position.y,
+                        radius: ball.circleRadius || 16,
+                        emoji: ball.emoji,
+                        startedAt: performance.now(),
+                    });
+
+                    const escapedIndex = escapedFlags.indexOf(ball.label);
+                    if (escapedIndex !== -1) escapedFlags.splice(escapedIndex, 1);
+                    announce(`${ball.label} respawned!`);
+                    setTimeout(replaceHeartAfterRespawn, 700);
+                });
+
+                const hasFlagCollision = event.pairs.some(
+                    ({ bodyA, bodyB }) =>
+                        bodyA.countryCode || bodyB.countryCode,
+                );
+                const now = performance.now();
+                if (!hasFlagCollision || now - lastCollisionSoundAt < 120) {
+                    return;
+                }
+                lastCollisionSoundAt = now;
+                playSound(collisionSound);
+            });
+
+            spawnFlagBalls();
+
+            function startGameAfterShake() {
+                if (gameStarted) return;
+
+                // Keep the yellow gate physical after the countdown. It is a
+                // moving barrier, not just decoration, so flags can never leak
+                // through it between physics frames.
+                if (yellowGateSegments.length === 0) {
+                    const gateStep = yellowGateArc / yellowGateSegmentCount;
+                    for (let i = 0; i < yellowGateSegmentCount; i++) {
+                        const gateAngle =
+                            yellowGateAngle -
+                            yellowGateArc / 2 +
+                            gateStep * (i + 0.5);
+                        const x = centerX + radius * Math.cos(gateAngle);
+                        const y = centerY + radius * Math.sin(gateAngle);
+                        const gateSegment = Bodies.rectangle(
+                            x,
+                            y,
+                            Math.max(4, (radius * yellowGateArc / yellowGateSegmentCount) * 1.45),
+                            Math.max(5, radius * 0.025),
+                            {
+                                isStatic: true,
+                                angle: gateAngle + Math.PI / 2,
+                                restitution: 0.9,
+                                friction: 0.02,
+                                render: { fillStyle: "#fde047" },
+                            },
+                        );
+                        gateSegment.gateAngle = gateAngle;
+                        yellowGateSegments.push(gateSegment);
+                    }
+                    Composite.add(world, yellowGateSegments);
+                }
+
+                gameStarted = true;
+                engine.timing.timeScale = 1;
+                startOverlayUI.classList.add("is-hidden");
+                if (startTimer) clearInterval(startTimer);
+                startTimer = null;
+            }
+
+            function startRoundSequence() {
+                if (startTimer) clearInterval(startTimer);
+
+                gameStarted = false;
+                engine.timing.timeScale = 0;
+                roundShakeStartedAt = performance.now();
+                lastRoundShakeX = 0;
+                lastRoundShakeY = 0;
+
+                // Reset both rotating angles so every round starts with the
+                // yellow gate exactly over the opening. The gate stays parked
+                // there for the entire 3-2-1 countdown.
+                currentAngle = 0;
+                yellowGateAngle = 0;
+
+                // Rebuild the ring so the yellow gate physically covers the
+                // opening for every new round.
+                buildRing();
+
+                startOverlayUI.classList.remove("is-hidden");
+                let countdown = 3;
+                startCountdownUI.textContent = String(countdown);
+
+                startTimer = setInterval(() => {
+                    countdown -= 1;
+                    if (countdown > 0) {
+                        startCountdownUI.textContent = String(countdown);
+                    } else {
+                        clearInterval(startTimer);
+                        startTimer = null;
+                        startGameAfterShake();
+                    }
+                }, 600);
+            }
+
+            // Every round begins with the same countdown + shake, not just the
+            // very first game.
+            startRoundSequence();
+
+            // 6. Escape Tracking and Winner Qualification
+            const escapedFlags = [];
+            const qualifiedListUI = document.getElementById("qualified-list");
+            const qualifiedCountUI = document.getElementById("qualified-count");
+            const eliminatedListUI = document.getElementById("eliminated-list");
+            const floatLayerUI = document.getElementById("float-layer");
+            const winnerDisplayUI = document.getElementById("winner-display");
+            const winnerFlagUI = document.getElementById("winner-flag");
+            const winnerNameUI = document.getElementById("winner-name");
+            const speechCaptionUI = document.getElementById("speech-caption");
+            let resetScheduled = false;
+            let resetTimer = null;
+            let speechCaptionTimer = null;
+            let speechActive = false;
+            let speechToken = 0;
+            let speechPendingText = null;
+            let roundComplete = false;
+            let femaleAmericanVoice = null;
+
+            function chooseFemaleAmericanVoice() {
+                if (!("speechSynthesis" in window)) return;
+                const voices = window.speechSynthesis.getVoices();
+                const americanVoices = voices.filter((voice) =>
+                    /^en-US$/i.test(voice.lang) || /^en_US$/i.test(voice.lang),
+                );
+                const femaleNameHints = [
+                    "female",
+                    "samantha",
+                    "ava",
+                    "allison",
+                    "karen",
+                    "susan",
+                    "zira",
+                    "aria",
+                    "jenny",
+                    "google us english",
+                ];
+                femaleAmericanVoice =
+                    americanVoices.find((voice) =>
+                        femaleNameHints.some((hint) =>
+                            voice.name.toLowerCase().includes(hint),
+                        ),
+                    ) || americanVoices[0] || null;
+            }
+
+            if ("speechSynthesis" in window) {
+                chooseFemaleAmericanVoice();
+                window.speechSynthesis.addEventListener(
+                    "voiceschanged",
+                    chooseFemaleAmericanVoice,
+                );
+            }
+            const qualifiedSlots = Array.from({ length: 30 }, (_, index) => {
+                const slot = document.createElement("li");
+                slot.setAttribute("aria-label", `Qualifier slot ${index + 1}`);
+                qualifiedListUI.append(slot);
+                return slot;
+            });
+
+            function floatEliminatedFlag(ball) {
+                const floatingFlag = document.createElement("div");
+                floatingFlag.className = "eliminated-float";
+                floatingFlag.textContent = ball.emoji;
+
+                // This animation is only the final continuation after the real
+                // Matter.js flag has already flown visibly through the gap.
+                // Start at the exact current physics position so there is no jump.
+                const vx = Number.isFinite(ball.velocity?.x) ? ball.velocity.x : 0;
+                const vy = Number.isFinite(ball.velocity?.y) ? ball.velocity.y : 0;
+                const speed = Math.hypot(vx, vy) || 1;
+                const ux = vx / speed;
+                const spin = ux >= 0 ? 1 : -1;
+
+                floatingFlag.style.left = `${ball.position.x}px`;
+                floatingFlag.style.top = `${ball.position.y}px`;
+                floatingFlag.style.setProperty("--exit-x", `${ux * Math.max(70, radius * 0.22)}px`);
+                floatingFlag.style.setProperty("--exit-y", `${Math.max(180, radius * 0.55)}px`);
+                floatingFlag.style.setProperty("--spin", `${spin}`);
+
+                floatLayerUI.append(floatingFlag);
+                while (floatLayerUI.children.length > 12) {
+                    floatLayerUI.firstElementChild.remove();
+                }
+                floatingFlag.addEventListener("animationend", () => floatingFlag.remove(), { once: true });
+
+                const eliminatedFlag = document.createElement("li");
+                eliminatedFlag.textContent = ball.emoji;
+                eliminatedFlag.setAttribute("aria-label", ball.label);
+                eliminatedListUI.append(eliminatedFlag);
+                eliminatedFlag.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "end" });
+            }
+
+            function showSpeechCaption(text) {
+                speechCaptionUI.textContent = text;
+                speechCaptionUI.classList.add("is-visible");
+                clearTimeout(speechCaptionTimer);
+                speechCaptionTimer = setTimeout(() => {
+                    speechCaptionUI.classList.remove("is-visible");
+                }, 3500);
+            }
+
+            function speakLatest(text) {
+                if (!("speechSynthesis" in window)) return;
+
+                // Never interrupt speech. Keep only the newest event waiting.
+                // When the current announcement finishes, immediately speak
+                // the latest queued event (older queued events are discarded).
+                speechToken += 1;
+                speechActive = true;
+                showSpeechCaption(text);
+                speechPendingText = text;
+
+                if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+                    return;
+                }
+
+                speakPendingAnnouncement();
+            }
+
+            function speakPendingAnnouncement() {
+                const text = speechPendingText;
+                if (!text || !("speechSynthesis" in window)) {
+                    speechActive = false;
+                    return;
+                }
+                speechPendingText = null;
+                showSpeechCaption(text);
+
+                const announcement = new SpeechSynthesisUtterance(text);
+                announcement.lang = "en-US";
+                announcement.rate = 1.02;
+                announcement.pitch = 1.32;
+                announcement.volume = 0.95;
+                if (femaleAmericanVoice) announcement.voice = femaleAmericanVoice;
+
+                const finishAnnouncement = () => {
+                    speechActive = false;
+                    // Speak only the newest event that arrived while this one
+                    // was talking. Do not interrupt the finished announcement.
+                    if (speechPendingText) {
+                        speechActive = true;
+                        speakPendingAnnouncement();
+                    }
+                };
+                announcement.addEventListener("end", finishAnnouncement, { once: true });
+                announcement.addEventListener("error", finishAnnouncement, { once: true });
+                window.speechSynthesis.speak(announcement);
+            }
+
+            function announceElimination(text) {
+                speakLatest(text);
+            }
+
+            function announce(text) {
+                speakLatest(text);
+            }
+
+            function finishRound(winner) {
+                if (roundComplete) return;
+                if (
+                    tournamentPhase === "qualifying" &&
+                    qualifiedFlags.length >= 30
+                ) {
+                    return;
+                }
+
+                roundComplete = true;
+                Composite.remove(world, winner);
+                balls = [];
+                const isFinal = tournamentPhase === "final";
+                winnerFlagUI.textContent = winner.emoji;
+                playSound(winSound);
+                winnerDisplayUI.style.display = "block";
+                winnerDisplayUI.style.left = `${centerX}px`;
+                winnerDisplayUI.style.top = `${centerY}px`;
+
+                if (isFinal) {
+                    winnerNameUI.textContent = `${winner.label} Wins the Final`;
+                    winnerDisplayUI.classList.add("is-final");
+                } else {
+                    qualifiedFlags.push({
+                        code: winner.countryCode,
+                        name: winner.label,
+                        emoji: winner.emoji,
+                        texture: winner.render?.sprite?.texture ||
+                            flagData.find((flag) => flag.code === winner.countryCode)?.texture,
+                    });
+                    winnerNameUI.textContent =
+                        qualifiedFlags.length === 30
+                            ? "30 FLAGS QUALIFIED"
+                            : `${winner.label} Qualifies`;
+                    winnerDisplayUI.classList.remove("is-final");
+
+                    const slotIndex = qualifiedFlags.length - 1;
+                    const qualifiedSlot = qualifiedSlots[slotIndex];
+                    qualifiedSlot.textContent = winner.emoji;
+                    qualifiedSlot.classList.add("is-filled");
+                    qualifiedSlot.setAttribute(
+                        "aria-label",
+                        `${winner.label} qualified, slot ${qualifiedFlags.length}`,
+                    );
+                    qualifiedCountUI.textContent = `${qualifiedFlags.length}/30`;
+                }
+
+                announce(
+                    isFinal
+                        ? `${winner.label} wins the final`
+                        : `${winner.label} qualifies`,
+                    true,
+                );
+
+                if (!isFinal && qualifiedFlags.length === 30) {
+                    resetScheduled = true;
+                    resetTimer = setTimeout(() => {
+                        escapedFlags.length = 0;
+                        eliminatedListUI.innerHTML = "";
+                        winnerDisplayUI.style.display = "none";
+                        roundComplete = false;
+                        resetScheduled = false;
+                        resetTimer = null;
+                        tournamentPhase = "final";
+                        spawnFlagBalls();
+                        startRoundSequence();
+                    }, 4500);
+                    return;
+                }
+
+                if (isFinal) {
+                    resetScheduled = true;
+                    resetTimer = setTimeout(() => {
+                        qualifiedFlags.length = 0;
+                        qualifiedSlots.forEach((slot, index) => {
+                            slot.textContent = "";
+                            slot.classList.remove("is-filled");
+                            slot.setAttribute(
+                                "aria-label",
+                                `Qualifier slot ${index + 1}`,
+                            );
+                        });
+                        qualifiedCountUI.textContent = "0/30";
+                        escapedFlags.length = 0;
+                        eliminatedListUI.innerHTML = "";
+                        winnerDisplayUI.style.display = "none";
+                        winnerDisplayUI.classList.remove("is-final");
+                        roundComplete = false;
+                        resetScheduled = false;
+                        resetTimer = null;
+                        tournamentPhase = "qualifying";
+                        spawnFlagBalls();
+                        startRoundSequence();
+                    }, 6000);
+                    return;
+                }
+
+                resetScheduled = true;
+                resetTimer = setTimeout(() => {
+                    escapedFlags.length = 0;
+                    eliminatedListUI.innerHTML = "";
+                    winnerDisplayUI.style.display = "none";
+                    roundComplete = false;
+                    resetScheduled = false;
+                    resetTimer = null;
+                    spawnFlagBalls();
+                    startRoundSequence();
+                }, 4500);
+            }
+
+            Events.on(engine, "afterUpdate", () => {
+                // No country can qualify or be eliminated during the countdown.
+                if (!gameStarted) return;
+
+                if (roundComplete || balls.length === 1) {
+                    if (balls.length === 1) finishRound(balls[0]);
+                    return;
+                }
+
+                for (let i = balls.length - 1; i >= 0; i--) {
+                    const ball = balls[i];
+                    const offsetX = ball.position.x - centerX;
+                    const offsetY = ball.position.y - centerY;
+                    const dist = Math.hypot(offsetX, offsetY);
+                    const normalX = offsetX / (dist || 1);
+                    const normalY = offsetY / dist;
+                    const radialVelocity =
+                        ball.velocity.x * normalX + ball.velocity.y * normalY;
+                    const ballAngle = Math.atan2(offsetY, offsetX);
+                    const gateRelativeAngle = Math.atan2(
+                        Math.sin(ballAngle - yellowGateAngle),
+                        Math.cos(ballAngle - yellowGateAngle),
+                    );
+                    const gateHalfAngle =
+                        yellowGateArc / 2 +
+                        Math.asin(Math.min(1, (ball.circleRadius + 7) / radius));
+
+                    // Hard safety barrier for the moving yellow gate. Matter's
+                    // static bodies are repositioned each frame, so a fast flag
+                    // can otherwise tunnel through a segment. If a flag reaches
+                    // the gate from inside, clamp it just inside the ring and
+                    // remove its outward velocity.
+                    if (
+                        Math.abs(gateRelativeAngle) <= gateHalfAngle &&
+                        dist >= radius - ball.circleRadius - 2 &&
+                        radialVelocity > 0
+                    ) {
+                        const safeRadius =
+                            radius - ball.circleRadius - Math.max(8, radius * 0.05) / 2 - 3;
+                        Body.setPosition(ball, {
+                            x: centerX + normalX * safeRadius,
+                            y: centerY + normalY * safeRadius,
+                        });
+                        Body.setVelocity(ball, {
+                            x: ball.velocity.x - (1 + ball.restitution) * radialVelocity * normalX,
+                            y: ball.velocity.y - (1 + ball.restitution) * radialVelocity * normalY,
+                        });
+                        continue;
+                    }
+
+                    const angleFromGap = Math.atan2(
+                        Math.sin(Math.atan2(offsetY, offsetX) - currentAngle),
+                        Math.cos(Math.atan2(offsetY, offsetX) - currentAngle),
+                    );
+                    const openingHalfAngle = Math.max(
+                        0,
+                        gapSize / 2 -
+                            Math.asin(
+                                Math.min(1, (ball.circleRadius + 2) / radius),
+                            ),
+                    );
+                    if (
+                        dist >= radius - ball.circleRadius &&
+                        dist <= radius + ball.circleRadius + 4 &&
+                        radialVelocity > 0 &&
+                        Math.abs(angleFromGap) <= openingHalfAngle
+                    ) {
+                        ball.isEscapingThroughGap = true;
+                    }
+
+                    // Keep the real Matter.js flag visible while it is escaping.
+                    // The old code hid the sprite at the ring and only created the
+                    // overlay much later, which made the flag appear to teleport
+                    // from the gap to outside the arena. A flag that has actually
+                    // entered the gap must remain visible and travel continuously.
+                    if (ball.isEscapingThroughGap) {
+                        ball.render.visible = true;
+                    } else {
+                        const visualBoundary = radius - ball.circleRadius - 1;
+                        ball.render.visible = !(dist >= visualBoundary && radialVelocity > 0);
+                    }
+
+                    if (dist > radius + ball.circleRadius + 4) {
+
+                        if (!ball.isEscapingThroughGap) {
+                            const safeRadius =
+                                radius -
+                                ball.circleRadius -
+                                Math.max(8, radius * 0.05) / 2 -
+                                2;
+                            Body.setPosition(ball, {
+                                x: centerX + normalX * safeRadius,
+                                y: centerY + normalY * safeRadius,
+                            });
+                            if (radialVelocity > 0) {
+                                Body.setVelocity(ball, {
+                                    x:
+                                        ball.velocity.x -
+                                        (1 + ball.restitution) *
+                                            radialVelocity *
+                                            normalX,
+                                    y:
+                                        ball.velocity.y -
+                                        (1 + ball.restitution) *
+                                            radialVelocity *
+                                            normalY,
+                                });
+                            }
+                            continue;
+                        }
+
+                        // Give escaped flags time to reach an outside heart pickup.
+                        if (ball.isEscapingThroughGap && dist < radius + 145) {
+                            continue;
+                        }
+
+                        if (!escapedFlags.includes(ball.label)) {
+                            escapedFlags.push(ball.label);
+                            floatEliminatedFlag(ball);
+
+                            announceElimination(`${ball.label} eliminated`);
+                        }
+
+                        Composite.remove(world, ball);
+                        balls.splice(i, 1);
+
+                        if (balls.length === 1) {
+                            finishRound(balls[0]);
+                            return;
+                        }
+                    }
+                }
+
+                if (balls.length === 0 && !resetScheduled) {
+                    resetScheduled = true;
+                    resetTimer = setTimeout(() => {
+                        escapedFlags.length = 0;
+                        eliminatedListUI.innerHTML = "";
+                        roundComplete = false;
+                        spawnFlagBalls();
+                        startRoundSequence();
+                        resetScheduled = false;
+                        resetTimer = null;
+                    }, 2500);
+                }
+            });
+
+            window.addEventListener("resize", () => {
+                updateGameGeometry();
+                render.canvas.width = width;
+                render.canvas.height = height;
+                render.options.width = width;
+                render.options.height = height;
+                buildRing();
+                buildHeartPickups();
+                if (resetTimer !== null) clearTimeout(resetTimer);
+                resetTimer = null;
+                resetScheduled = false;
+                escapedFlags.length = 0;
+                eliminatedListUI.innerHTML = "";
+                winnerDisplayUI.style.display = "none";
+                roundComplete = false;
+                spawnFlagBalls();
+            });
+        </script>
+    </body>
+</html>

@@ -68,6 +68,21 @@
                 );
                 pointer-events: none;
             }
+
+            /* Background Star Animations */
+            .bg-star {
+                position: absolute;
+                z-index: 1;
+                background: #ffffff;
+                border-radius: 50%;
+                animation: star-twinkle var(--duration) ease-in-out infinite;
+                pointer-events: none;
+            }
+            @keyframes star-twinkle {
+                0%, 100% { opacity: 0.2; transform: scale(0.8); }
+                50% { opacity: 0.9; transform: scale(1.3); box-shadow: 0 0 8px #fff; }
+            }
+
             #live-indicator {
                 display: flex;
                 align-items: center;
@@ -209,6 +224,27 @@
                 background: rgba(115, 18, 37, 0.6);
                 box-shadow: inset 0 0 12px rgba(251, 54, 87, 0.13);
             }
+
+            /* Loadout Timer Widget placed right below the qualified board inside leaderboard container */
+            #loadout-timer-widget {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 6px;
+                width: 100%;
+                margin-top: 8px;
+                padding: 4px 8px;
+                border: 1px solid rgba(59, 130, 246, 0.35);
+                border-radius: 4px;
+                background: rgba(15, 23, 42, 0.65);
+                color: #93c5fd;
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                box-sizing: border-box;
+            }
+
             #elimination-panel {
                 position: absolute;
                 z-index: 20;
@@ -330,7 +366,122 @@
                 }
             }
 
+            /* Start Overlay & Banner Countdown Styling (3 2 1) */
+            #start-overlay {
+                position: absolute;
+                inset: 0;
+                z-index: 40;
+                display: grid;
+                place-items: center;
+                background: rgba(16, 7, 11, 0.55);
+                backdrop-filter: blur(3px);
+                transition: opacity 0.3s ease;
+            }
+            #start-overlay.is-hidden {
+                opacity: 0;
+                pointer-events: none;
+            }
+            #start-countdown-banner {
+                padding: 18px 36px;
+                border: 2px solid rgba(253, 224, 71, 0.75);
+                border-radius: 12px;
+                background: linear-gradient(135deg, rgba(63, 13, 25, 0.95), rgba(32, 9, 15, 0.95));
+                box-shadow: 0 0 35px rgba(253, 224, 71, 0.35), inset 0 0 15px rgba(253, 224, 71, 0.2);
+                text-align: center;
+                animation: banner-pulse 0.8s ease-in-out infinite alternate;
+            }
+            @keyframes banner-pulse {
+                0% { transform: scale(0.97); box-shadow: 0 0 25px rgba(253, 224, 71, 0.3); }
+                100% { transform: scale(1.03); box-shadow: 0 0 45px rgba(253, 224, 71, 0.55); }
+            }
+            #start-countdown-title {
+                display: block;
+                color: #fde047;
+                font-size: clamp(14px, 4vw, 20px);
+                font-weight: 800;
+                letter-spacing: 0.18em;
+                margin-bottom: 4px;
+                text-shadow: 0 0 10px rgba(253, 224, 71, 0.6);
+            }
+            #start-countdown {
+                display: block;
+                color: #ffffff;
+                font-size: clamp(48px, 15vw, 84px);
+                font-weight: 900;
+                line-height: 1;
+                font-family: "IBM Plex Mono", monospace;
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            }
 
+            /* Loadout Banner Overlay */
+            #loadout-banner {
+                position: absolute;
+                top: 15%;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 45;
+                padding: 12px 24px;
+                border: 2px solid rgba(59, 130, 246, 0.8);
+                border-radius: 10px;
+                background: rgba(15, 23, 42, 0.92);
+                box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+                text-align: center;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease, visibility 0.3s ease;
+                pointer-events: none;
+            }
+            #loadout-banner.is-visible {
+                opacity: 1;
+                visibility: visible;
+                animation: loadout-banner-bounce 0.5s ease;
+            }
+            @keyframes loadout-banner-bounce {
+                0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+                100% { transform: translateX(-50%) scale(1); opacity: 1; }
+            }
+            #loadout-banner-title {
+                color: #60a5fa;
+                font-size: 14px;
+                font-weight: 800;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+            }
+
+            /* Winner Banner Styling */
+            #winner-display {
+                position: absolute;
+                z-index: 50;
+                display: none;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                text-align: center;
+                padding: 24px 40px;
+                border: 3px solid rgba(253, 224, 71, 0.9);
+                border-radius: 14px;
+                background: linear-gradient(145deg, rgba(75, 15, 30, 0.98), rgba(25, 6, 12, 0.98));
+                box-shadow: 0 0 50px rgba(253, 224, 71, 0.5), inset 0 0 20px rgba(253, 224, 71, 0.3);
+                animation: winner-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+            @keyframes winner-pop {
+                0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            }
+            #winner-flag {
+                font-size: 64px;
+                line-height: 1;
+                margin-bottom: 8px;
+                filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6));
+            }
+            #winner-name {
+                color: #fde047;
+                font-size: clamp(20px, 6vw, 32px);
+                font-weight: 900;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                text-shadow: 0 0 12px rgba(253, 224, 71, 0.7);
+            }
 
             #speech-caption {
                 position: absolute;
@@ -415,6 +566,9 @@
     </head>
     <body class="overflow-hidden p-0 m-0">
         <div id="game-container">
+            <!-- Background Star Container -->
+            <div id="star-layer" class="absolute inset-0 z-0 pointer-events-none"></div>
+
             <div
                 id="leaderboard"
                 aria-label="Countries qualified for the final"
@@ -443,7 +597,11 @@
                     aria-live="polite"
                     aria-relevant="additions"
                 ></ul>
+                
+                <!-- Next Loadout Timer Widget placed directly under the qualified board inside leaderboard -->
+                <div id="loadout-timer-widget">NEXT LOADOUT: <span id="loadout-countdown-sec">60</span>s</div>
             </div>
+
             <div id="elimination-panel" aria-label="Recently eliminated flags">
                 <div id="elimination-heading">ELIMINATED</div>
                 <ul id="eliminated-list" aria-live="off"></ul>
@@ -455,9 +613,20 @@
                 class="absolute inset-0 z-10 w-full h-full"
             ></div>
             <div id="float-layer" aria-hidden="true"></div>
+            
+            <!-- Banner Countdown Overlay (3 2 1) -->
             <div id="start-overlay" aria-hidden="true">
-                <div id="start-countdown">3</div>
+                <div id="start-countdown-banner">
+                    <span id="start-countdown-title">ROUND STARTING IN</span>
+                    <span id="start-countdown">3</span>
+                </div>
             </div>
+
+            <!-- Loadout Banner Overlay -->
+            <div id="loadout-banner" aria-hidden="true">
+                <div id="loadout-banner-title">LOADOUT COMING IN 10 SECONDS</div>
+            </div>
+
             <div id="winner-display" aria-live="assertive">
                 <div id="winner-flag"></div>
                 <div id="winner-name"></div>
@@ -470,6 +639,21 @@
         </div>
 
         <script>
+            // Generate background twinkling stars
+            const starLayer = document.getElementById("star-layer");
+            for (let i = 0; i < 45; i++) {
+                const star = document.createElement("div");
+                star.className = "bg-star";
+                const size = Math.random() * 2.5 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.setProperty("--duration", `${Math.random() * 3 + 2}s`);
+                star.style.animationDelay = `${Math.random() * 3}s`;
+                starLayer.appendChild(star);
+            }
+
             // 1. Country Flag Database: 193 UN members plus the Holy See and Palestine.
             const countryEntries = `
                 AD|Andorra,AE|United Arab Emirates,AF|Afghanistan,AG|Antigua and Barbuda,AL|Albania,AM|Armenia,AO|Angola,AR|Argentina,AT|Austria,AU|Australia,AZ|Azerbaijan
@@ -500,7 +684,7 @@
                     return { code, name, emoji: countryFlagEmoji(code) };
                 });
 
-            // 2. Transparent flag textures keep the emoji flags free of badge circles.
+            // 2. Transparent flag textures keep emoji flags free of badge circles.
             function createEmojiTexture(emoji, radius = 32) {
                 const canvas = document.createElement("canvas");
                 const size = radius * 2;
@@ -515,7 +699,6 @@
                 return canvas.toDataURL();
             }
 
-            // Pre-generate Texture URLs
             flagData.forEach((flag) => {
                 flag.texture = createEmojiTexture(flag.emoji, 32);
             });
@@ -594,7 +777,7 @@
             let centerX;
             let centerY;
             let radius;
-            const gapSize = 0.38; // Normal exit gap size in radians
+            const gapSize = 0.38;
             const segmentCount = 64;
             const qualifiedFlags = [];
             let balls = [];
@@ -637,13 +820,10 @@
 
             Render.run(render);
 
-            // Neon glow for the circle and yellow gate/arc.
             Events.on(render, "afterRender", () => {
                 const ctx = render.context;
                 ctx.save();
 
-                // Glowing circle outline, with the real opening preserved.
-                // The visible neon ring must match the physical ring gap.
                 const visualGapHalf = gapSize / 2;
                 const visualGapCenter = currentAngle;
                 ctx.strokeStyle = "rgba(251, 54, 87, 0.95)";
@@ -661,8 +841,6 @@
                 );
                 ctx.stroke();
 
-                // Yellow arc stays parked in the opening during the countdown,
-                // then sweeps around the circle once the game starts.
                 ctx.beginPath();
                 ctx.arc(
                     centerX,
@@ -677,12 +855,11 @@
                 ctx.shadowBlur = Math.max(24, radius * 0.11);
                 ctx.stroke();
 
-                // Extra bright core for the gate.
                 ctx.shadowBlur = Math.max(10, radius * 0.05);
                 ctx.lineWidth = Math.max(3, radius * 0.012);
                 ctx.stroke();
 
-                // Random glowing heart respawn pickups outside the ring.
+                // Heart pickups
                 heartPickups.forEach((heart) => {
                     if (!heart.renderPosition) return;
                     const { x, y, size } = heart.renderPosition;
@@ -697,28 +874,70 @@
                     ctx.restore();
                 });
 
-                // Small respawn animation around the flag that just returned.
+                // Falling Mystery Box rendering & pulsing animation
                 const now = performance.now();
+                activeMysteryBoxes.forEach((box) => {
+                    ctx.save();
+                    const scalePulse = 1 + Math.sin(now * 0.01) * 0.15;
+                    ctx.font = `900 ${Math.round(28 * scalePulse)}px "Apple Color Emoji", sans-serif`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.shadowColor = "rgba(168, 85, 247, 0.95)";
+                    ctx.shadowBlur = 18;
+                    ctx.fillText("🎁", box.position.x, box.position.y);
+                    ctx.restore();
+                });
+
+                // Power-up visual glow effects on active flags based on loadout type
+                balls.forEach((ball) => {
+                    if (ball.activePowerup) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(ball.position.x, ball.position.y, (ball.circleRadius || 16) + 7, 0, Math.PI * 2);
+                        ctx.strokeStyle = ball.activePowerupColor || "rgba(255, 255, 255, 0.9)";
+                        ctx.lineWidth = 3.5;
+                        ctx.shadowColor = ball.activePowerupColor || "rgba(255, 255, 255, 1)";
+                        ctx.shadowBlur = 16;
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                });
+
+                // Lightning Strike respawn animations
                 respawnEffects = respawnEffects.filter((effect) => {
                     const progress = Math.min(1, (now - effect.startedAt) / 700);
                     if (progress >= 1) return false;
-                    const eased = 1 - Math.pow(1 - progress, 3);
                     const pulse = 1 - progress;
-                    const size = effect.radius * (0.7 + eased * 0.65);
+                    
                     ctx.save();
-                    ctx.globalAlpha = pulse * 0.9;
-                    ctx.strokeStyle = "rgba(255, 90, 150, 0.95)";
-                    ctx.lineWidth = Math.max(2, effect.radius * 0.11);
-                    ctx.shadowColor = "rgba(255, 90, 150, 0.9)";
-                    ctx.shadowBlur = Math.max(8, effect.radius * 0.55);
+                    ctx.strokeStyle = "rgba(238, 242, 255, 0.95)";
+                    ctx.fillStyle = "#ffffff";
+                    ctx.shadowColor = "rgba(59, 130, 246, 0.95)";
+                    ctx.shadowBlur = 18;
+                    ctx.lineWidth = 3;
+
                     ctx.beginPath();
-                    ctx.arc(effect.x, effect.y, size, 0, Math.PI * 2);
+                    const topX = effect.x + (Math.random() - 0.5) * 40;
+                    const topY = effect.y - 120 - Math.random() * 40;
+                    ctx.moveTo(effect.x, effect.y);
+                    ctx.lineTo(topX + (Math.random() - 0.5) * 20, topY + 40);
+                    ctx.lineTo(topX, topY);
                     ctx.stroke();
-                    ctx.font = `900 ${Math.max(14, effect.radius * 1.15)}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+
+                    const waveRadius = effect.radius * (0.8 + progress * 2.2);
+                    ctx.globalAlpha = pulse * 0.85;
+                    ctx.strokeStyle = "rgba(147, 197, 253, 0.9)";
+                    ctx.lineWidth = Math.max(2, effect.radius * 0.15);
+                    ctx.beginPath();
+                    ctx.arc(effect.x, effect.y, waveRadius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    ctx.font = `900 ${Math.max(16, effect.radius * 1.3)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.globalAlpha = pulse;
-                    ctx.shadowBlur = Math.max(8, effect.radius * 0.45);
+                    ctx.globalAlpha = 1;
+                    ctx.shadowColor = "rgba(255, 255, 255, 1)";
+                    ctx.shadowBlur = 20;
                     ctx.fillText(effect.emoji, effect.x, effect.y);
                     ctx.restore();
                     return true;
@@ -729,12 +948,12 @@
             const runner = Runner.create();
             Runner.run(runner, engine);
 
-            // 4. Rotating Circle Wall with Gap
             let ringSegments = [];
             let ringBarriers = [];
             let yellowGateSegments = [];
             let heartPickups = [];
             let respawnEffects = [];
+            let activeMysteryBoxes = [];
             let currentAngle = 0;
             let yellowGateAngle = 0;
             const rotationSpeed = 0.025;
@@ -804,7 +1023,6 @@
                     ringBarriers.push(barrier);
                 }
 
-                // Yellow moving arc: a physical gate that sweeps around the ring.
                 const gateStep = yellowGateArc / yellowGateSegmentCount;
                 for (let i = 0; i < yellowGateSegmentCount; i++) {
                     const gateAngle =
@@ -859,13 +1077,59 @@
                 heartPickups.forEach((heart) => Composite.remove(world, heart));
                 heartPickups = [];
 
-                const heartCount = 8;
+                const heartCount = 6;
+                const minDistanceBetweenHearts = 70;
+
                 for (let i = 0; i < heartCount; i++) {
-                    heartPickups.push(createHeartPickup());
+                    let valid = false;
+                    let newHeart = null;
+                    let attempts = 0;
+
+                    while (!valid && attempts < 25) {
+                        attempts++;
+                        newHeart = createHeartPickup();
+                        valid = heartPickups.every((existing) => {
+                            const dx = existing.renderPosition.x - newHeart.renderPosition.x;
+                            const dy = existing.renderPosition.y - newHeart.renderPosition.y;
+                            return Math.hypot(dx, dy) >= minDistanceBetweenHearts;
+                        });
+                    }
+                    if (newHeart) {
+                        heartPickups.push(newHeart);
+                    }
                 }
 
                 Composite.add(world, heartPickups);
             }
+
+            // Reposition hearts every 3 seconds while guaranteeing they are never too close to each other
+            setInterval(() => {
+                heartPickups.forEach((heart) => Composite.remove(world, heart));
+                heartPickups = [];
+
+                const heartCount = 6;
+                const minDistanceBetweenHearts = 70;
+
+                for (let i = 0; i < heartCount; i++) {
+                    let valid = false;
+                    let newHeart = null;
+                    let attempts = 0;
+
+                    while (!valid && attempts < 25) {
+                        attempts++;
+                        newHeart = createHeartPickup();
+                        valid = heartPickups.every((existing) => {
+                            const dx = existing.renderPosition.x - newHeart.renderPosition.x;
+                            const dy = existing.renderPosition.y - newHeart.renderPosition.y;
+                            return Math.hypot(dx, dy) >= minDistanceBetweenHearts;
+                        });
+                    }
+                    if (newHeart) {
+                        heartPickups.push(newHeart);
+                    }
+                }
+                Composite.add(world, heartPickups);
+            }, 3000);
 
             function replaceHeartAfterRespawn() {
                 const heart = createHeartPickup();
@@ -875,7 +1139,42 @@
 
             buildHeartPickups();
 
-            // Rotate Circle Frame by Frame
+            // Mystery Box Spawner (Every 1 minute, falling from sky within reachable range of circle)
+            function spawnMysteryBox() {
+                if (!gameStarted || roundComplete) return;
+                const spawnX = centerX + (Math.random() - 0.5) * (radius * 1.2);
+                const spawnY = centerY - radius - 80;
+                const box = Bodies.circle(spawnX, spawnY, 20, {
+                    isStatic: false,
+                    isSensor: true,
+                    label: "mystery-box",
+                    render: { visible: false }
+                });
+                Body.setVelocity(box, { x: 0, y: 2 + Math.random() * 2 });
+                activeMysteryBoxes.push(box);
+                Composite.add(world, box);
+            }
+            setInterval(spawnMysteryBox, 60000);
+
+            // Loadout Banner & Timer management
+            let nextLoadoutSeconds = 60;
+            const loadoutCountdownSecUI = document.getElementById("loadout-countdown-sec");
+            const loadoutBannerUI = document.getElementById("loadout-banner");
+
+            setInterval(() => {
+                if (!gameStarted || roundComplete) return;
+                nextLoadoutSeconds--;
+                if (nextLoadoutSeconds < 0) nextLoadoutSeconds = 60;
+                loadoutCountdownSecUI.textContent = String(nextLoadoutSeconds);
+
+                if (nextLoadoutSeconds === 10) {
+                    loadoutBannerUI.classList.add("is-visible");
+                    speakForceOverride("Loadout in 10 seconds");
+                } else if (nextLoadoutSeconds === 0) {
+                    loadoutBannerUI.classList.remove("is-visible");
+                }
+            }, 1000);
+
             const startOverlayUI = document.getElementById("start-overlay");
             const startCountdownUI = document.getElementById("start-countdown");
             let roundShakeStartedAt = performance.now();
@@ -928,10 +1227,15 @@
                     Body.setAngle(segment, angle + Math.PI / 2);
                 });
 
+                // Update falling mystery boxes position check
+                activeMysteryBoxes.forEach((box, idx) => {
+                    if (box.position.y > centerY + radius + 50) {
+                        Composite.remove(world, box);
+                        activeMysteryBoxes.splice(idx, 1);
+                    }
+                });
+
                 if (!gameStarted) {
-                    // Hard-lock flags to the arena during 3-2-1. Their position
-                    // is recalculated from a fixed inner offset every frame, so
-                    // neither physics nor the visual shake can push them outside.
                     const countdownSafeRadius =
                         Math.max(20, radius - ballRadiusForCountdown - Math.max(30, radius * 0.12));
                     balls.forEach((ball) => {
@@ -965,7 +1269,7 @@
                 }
 
                 balls.forEach((ball) => {
-                    if (Math.hypot(ball.velocity.x, ball.velocity.y) < 2.5) {
+                    if (!ball.isCooldown && Math.hypot(ball.velocity.x, ball.velocity.y) < 2.5) {
                         Body.setVelocity(ball, {
                             x: (Math.random() - 0.5) * 8,
                             y: -3 - Math.random() * 3,
@@ -1019,8 +1323,6 @@
                         x: (Math.random() - 0.5) * 7,
                         y: (Math.random() - 0.5) * 7,
                     });
-                    // Never give a freshly spawned flag enough outward speed to
-                    // start outside the safe physics envelope.
                     const spawnOffsetX = ball.position.x - centerX;
                     const spawnOffsetY = ball.position.y - centerY;
                     const spawnDist = Math.hypot(spawnOffsetX, spawnOffsetY) || 1;
@@ -1041,7 +1343,65 @@
             Events.on(engine, "collisionStart", (event) => {
                 event.pairs.forEach(({ bodyA, bodyB }) => {
                     const ball = bodyA.countryCode ? bodyA : bodyB.countryCode ? bodyB : null;
+                    const otherBall = (bodyA.countryCode && bodyA !== ball) ? bodyA : (bodyB.countryCode && bodyB !== ball) ? bodyB : null;
                     const heart = bodyA.label === "respawn-heart" ? bodyA : bodyB.label === "respawn-heart" ? bodyB : null;
+                    const mystery = bodyA.label === "mystery-box" ? bodyA : bodyB.label === "mystery-box" ? bodyB : null;
+
+                    // Bomb touch elimination: if a ball has active bomb powerup and touches other flags, eliminate up to 5 touched flags
+                    if (ball && otherBall && ball.activePowerup === "bomb" && !otherBall.isShielded) {
+                        if (!ball.bombTouchedTargets) ball.bombTouchedTargets = new Set();
+                        if (!ball.bombTouchedTargets.has(otherBall) && ball.bombTouchedTargets.size < 5) {
+                            ball.bombTouchedTargets.add(otherBall);
+                            if (!escapedFlags.includes(otherBall.label)) {
+                                escapedFlags.push(otherBall.label);
+                                floatEliminatedFlag(otherBall);
+                                announceElimination(`${otherBall.label} eliminated by bomb touch`);
+                            }
+                            Composite.remove(world, otherBall);
+                            const idx = balls.indexOf(otherBall);
+                            if (idx !== -1) balls.splice(idx, 1);
+                        }
+                    }
+
+                    // Mystery Box Collision Handler with unique glow colors & animations
+                    if (ball && mystery) {
+                        const boxIndex = activeMysteryBoxes.indexOf(mystery);
+                        if (boxIndex !== -1) {
+                            activeMysteryBoxes.splice(boxIndex, 1);
+                            Composite.remove(world, mystery);
+
+                            const effects = ["bomb", "shield", "slowmo"];
+                            const chosenEffect = effects[Math.floor(Math.random() * effects.length)];
+
+                            if (chosenEffect === "bomb") {
+                                announce(`${ball.label} triggered a Bomb Mystery Box!`);
+                                ball.activePowerup = "bomb";
+                                ball.activePowerupColor = "rgba(239, 68, 68, 0.95)"; // Red glow for bomb
+                                ball.bombTouchedTargets = new Set();
+                                setTimeout(() => { ball.activePowerup = null; ball.bombTouchedTargets = null; }, 10000);
+                            } else if (chosenEffect === "shield") {
+                                announce(`${ball.label} obtained a Shield Bubble!`);
+                                ball.isShielded = true;
+                                ball.activePowerup = "shield";
+                                ball.activePowerupColor = "rgba(59, 130, 246, 0.95)"; // Blue glow for shield
+                                setTimeout(() => {
+                                    ball.isShielded = false;
+                                    ball.activePowerup = null;
+                                }, 10000);
+                            } else if (chosenEffect === "slowmo") {
+                                announce(`Slow-Mo activated for ${ball.label}!`);
+                                ball.activePowerup = "slowmo";
+                                ball.activePowerupColor = "rgba(168, 85, 247, 0.95)"; // Purple glow for slowmo
+                                const originalAirFriction = ball.frictionAir;
+                                ball.frictionAir = 0.05;
+                                setTimeout(() => {
+                                    ball.frictionAir = originalAirFriction;
+                                    ball.activePowerup = null;
+                                }, 10000);
+                            }
+                        }
+                    }
+
                     if (!ball || !heart || !ball.isEscapingThroughGap) return;
 
                     const heartIndex = heartPickups.indexOf(heart);
@@ -1052,14 +1412,22 @@
 
                     ball.isEscapingThroughGap = false;
                     ball.render.visible = true;
+                    
+                    // Cooldown before getting back to bouncing normally
                     Body.setPosition(ball, {
-                        x: centerX + (Math.random() - 0.5) * radius * 0.45,
-                        y: centerY + (Math.random() - 0.5) * radius * 0.45,
+                        x: centerX + (Math.random() - 0.5) * radius * 0.3,
+                        y: centerY + (Math.random() - 0.5) * radius * 0.3,
                     });
-                    Body.setVelocity(ball, {
-                        x: (Math.random() - 0.5) * 10,
-                        y: (Math.random() - 0.5) * 10,
-                    });
+                    Body.setVelocity(ball, { x: 0, y: 0 });
+                    ball.isCooldown = true;
+
+                    setTimeout(() => {
+                        ball.isCooldown = false;
+                        Body.setVelocity(ball, {
+                            x: (Math.random() - 0.5) * 8,
+                            y: -3 - Math.random() * 3,
+                        });
+                    }, 1500);
 
                     respawnEffects.push({
                         x: ball.position.x,
@@ -1071,7 +1439,7 @@
 
                     const escapedIndex = escapedFlags.indexOf(ball.label);
                     if (escapedIndex !== -1) escapedFlags.splice(escapedIndex, 1);
-                    announce(`${ball.label} respawned!`);
+                    announce(`${ball.label} respawned`);
                     setTimeout(replaceHeartAfterRespawn, 700);
                 });
 
@@ -1092,9 +1460,6 @@
             function startGameAfterShake() {
                 if (gameStarted) return;
 
-                // Keep the yellow gate physical after the countdown. It is a
-                // moving barrier, not just decoration, so flags can never leak
-                // through it between physics frames.
                 if (yellowGateSegments.length === 0) {
                     const gateStep = yellowGateArc / yellowGateSegmentCount;
                     for (let i = 0; i < yellowGateSegmentCount; i++) {
@@ -1139,14 +1504,8 @@
                 lastRoundShakeX = 0;
                 lastRoundShakeY = 0;
 
-                // Reset both rotating angles so every round starts with the
-                // yellow gate exactly over the opening. The gate stays parked
-                // there for the entire 3-2-1 countdown.
                 currentAngle = 0;
                 yellowGateAngle = 0;
-
-                // Rebuild the ring so the yellow gate physically covers the
-                // opening for every new round.
                 buildRing();
 
                 startOverlayUI.classList.remove("is-hidden");
@@ -1165,11 +1524,8 @@
                 }, 600);
             }
 
-            // Every round begins with the same countdown + shake, not just the
-            // very first game.
             startRoundSequence();
 
-            // 6. Escape Tracking and Winner Qualification
             const escapedFlags = [];
             const qualifiedListUI = document.getElementById("qualified-list");
             const qualifiedCountUI = document.getElementById("qualified-count");
@@ -1233,9 +1589,6 @@
                 floatingFlag.className = "eliminated-float";
                 floatingFlag.textContent = ball.emoji;
 
-                // This animation is only the final continuation after the real
-                // Matter.js flag has already flown visibly through the gap.
-                // Start at the exact current physics position so there is no jump.
                 const vx = Number.isFinite(ball.velocity?.x) ? ball.velocity.x : 0;
                 const vy = Number.isFinite(ball.velocity?.y) ? ball.velocity.y : 0;
                 const speed = Math.hypot(vx, vy) || 1;
@@ -1270,12 +1623,21 @@
                 }, 3500);
             }
 
+            function speakForceOverride(text) {
+                if (!("speechSynthesis" in window)) return;
+                window.speechSynthesis.cancel();
+                showSpeechCaption(text);
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "en-US";
+                utterance.rate = 1.05;
+                utterance.pitch = 1.3;
+                if (femaleAmericanVoice) utterance.voice = femaleAmericanVoice;
+                window.speechSynthesis.speak(utterance);
+            }
+
             function speakLatest(text) {
                 if (!("speechSynthesis" in window)) return;
 
-                // Never interrupt speech. Keep only the newest event waiting.
-                // When the current announcement finishes, immediately speak
-                // the latest queued event (older queued events are discarded).
                 speechToken += 1;
                 speechActive = true;
                 showSpeechCaption(text);
@@ -1306,8 +1668,6 @@
 
                 const finishAnnouncement = () => {
                     speechActive = false;
-                    // Speak only the newest event that arrived while this one
-                    // was talking. Do not interrupt the finished announcement.
                     if (speechPendingText) {
                         speechActive = true;
                         speakPendingAnnouncement();
@@ -1437,7 +1797,6 @@
             }
 
             Events.on(engine, "afterUpdate", () => {
-                // No country can qualify or be eliminated during the countdown.
                 if (!gameStarted) return;
 
                 if (roundComplete || balls.length === 1) {
@@ -1463,11 +1822,6 @@
                         yellowGateArc / 2 +
                         Math.asin(Math.min(1, (ball.circleRadius + 7) / radius));
 
-                    // Hard safety barrier for the moving yellow gate. Matter's
-                    // static bodies are repositioned each frame, so a fast flag
-                    // can otherwise tunnel through a segment. If a flag reaches
-                    // the gate from inside, clamp it just inside the ring and
-                    // remove its outward velocity.
                     if (
                         Math.abs(gateRelativeAngle) <= gateHalfAngle &&
                         dist >= radius - ball.circleRadius - 2 &&
@@ -1506,11 +1860,6 @@
                         ball.isEscapingThroughGap = true;
                     }
 
-                    // Keep the real Matter.js flag visible while it is escaping.
-                    // The old code hid the sprite at the ring and only created the
-                    // overlay much later, which made the flag appear to teleport
-                    // from the gap to outside the arena. A flag that has actually
-                    // entered the gap must remain visible and travel continuously.
                     if (ball.isEscapingThroughGap) {
                         ball.render.visible = true;
                     } else {
@@ -1547,8 +1896,21 @@
                             continue;
                         }
 
-                        // Give escaped flags time to reach an outside heart pickup.
                         if (ball.isEscapingThroughGap && dist < radius + 145) {
+                            continue;
+                        }
+
+                        // If shielded, protect from elimination and bounce back inside!
+                        if (ball.isShielded) {
+                            ball.isEscapingThroughGap = false;
+                            Body.setPosition(ball, {
+                                x: centerX + normalX * (radius - 40),
+                                y: centerY + normalY * (radius - 40),
+                            });
+                            Body.setVelocity(ball, {
+                                x: -normalX * 6,
+                                y: -normalY * 6,
+                            });
                             continue;
                         }
 
